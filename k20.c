@@ -1,3 +1,21 @@
+/*
+    Copyright (C) 2008  Hans Fugal
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+*/
+
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -21,7 +39,7 @@ int main(int argc, char *const *argv)
 
     struct context ctx = {};
     ctx.dump = opts.d;
-    
+
     // JACK initialization
     ctx.jack = jack_client_open(opts.n, 0, 0);
     if (!ctx.jack)
@@ -30,14 +48,14 @@ int main(int argc, char *const *argv)
         exit(1);
     }
 
-    ctx.m.port = jack_port_register(ctx.jack, "in", JACK_DEFAULT_AUDIO_TYPE, 
+    ctx.m.port = jack_port_register(ctx.jack, "in", JACK_DEFAULT_AUDIO_TYPE,
                                     JackPortIsInput|JackPortIsTerminal, 0);
     if (!ctx.m.port)
     {
         fprintf(stderr, "Failed to create input port.\n");
         exit(1);
     }
-    
+
     if (jack_set_process_callback(ctx.jack, jack_process, &ctx) != 0)
     {
         fprintf(stderr, "Failed to set process callback.\n");
@@ -137,21 +155,3 @@ int scale(float dbfs)
 
     return max(0, min(x, 71));
 }
-
-/*
-    Copyright (C) 2008  Hans Fugal
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-*/

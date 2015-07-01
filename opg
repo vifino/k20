@@ -1,4 +1,22 @@
 #! /usr/bin/ruby
+=begin
+    Copyright (C) 2008  Hans Fugal <hans@fugal.net>
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+=end
+
 require 'ostruct'
 require 'erb'
 require 'pathname'
@@ -42,7 +60,7 @@ header_template = <<-EOF
 #define _OPG_H
 
 struct options {
-<% opts.each do |o| 
+<% opts.each do |o|
      t = o.tipe
      t = 'int' if t == 'bool' %>
     <%= sprintf("%-5s", t) %> <%= o.short %>; /* <%= o.long %> */
@@ -69,7 +87,7 @@ source_template = <<-EOF
 
 void usage(void)
 {
-<% 
+<%
 longest = opts.map{|o| o.long.size + (o.param ? o.param.size : 0)}.max + 5
 input.each_line do |line|
   if line =~ /^-(.)/ and (o = opts.find {|o| o.short == $1})
@@ -99,7 +117,7 @@ void parse_options(int *argc, char * const **argv, struct options *opts)
         {0,0,0,0}
     };
 
-<% optstring = opts.map{|o| o.short + (o.tipe == 'bool' ? "" : 
+<% optstring = opts.map{|o| o.short + (o.tipe == 'bool' ? "" :
                                          (o.required ? ":" : "::"))}.join %>
     int ch;
     while ((ch = getopt_long(*argc, *argv, "h<%= optstring %>", longopts, 0)) != -1)
@@ -132,7 +150,7 @@ void parse_options(int *argc, char * const **argv, struct options *opts)
             }
 <%   when 'bool' %>
             opts-><%= o.short %> = 1;
-<%   else 
+<%   else
        raise "Shouldn't happen"
      end %>
             break;
@@ -151,21 +169,3 @@ header_template = ERB.new(header_template,nil,'>')
 source_template = ERB.new(source_template,nil,'>')
 header.open('w') {|h| h.puts header_template.result(binding)}
 source.open('w') {|c| c.puts source_template.result(binding)}
-
-=begin
-    Copyright (C) 2008  Hans Fugal <hans@fugal.net>
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-=end

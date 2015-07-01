@@ -1,17 +1,3 @@
-// Why isn't there a float ringbuffer in JACK?!
-
-#ifndef RINGBUFFER_H
-#define RINGBUFFER_H
-
-#include <jack/ringbuffer.h>
-
-jack_ringbuffer_t *ringbuffer_create(size_t sz);
-size_t ringbuffer_peek(jack_ringbuffer_t *rb, float *dest, size_t cnt);
-void ringbuffer_read_advance(jack_ringbuffer_t *rb, size_t cnt);
-size_t ringbuffer_write(jack_ringbuffer_t *rb, float *src, size_t cnt);
-
-#endif
-
 /*
     Copyright (C) 2008  Hans Fugal
 
@@ -29,3 +15,17 @@ size_t ringbuffer_write(jack_ringbuffer_t *rb, float *src, size_t cnt);
     along with this program; if not, write to the Free Software
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
+
+// Why isn't there a float ringbuffer in JACK?!
+
+#ifndef RINGBUFFER_H
+#define RINGBUFFER_H
+
+#include <jack/ringbuffer.h>
+
+jack_ringbuffer_t *ringbuffer_create(size_t sz);
+size_t ringbuffer_peek(jack_ringbuffer_t *rb, float *dest, size_t cnt);
+void ringbuffer_read_advance(jack_ringbuffer_t *rb, size_t cnt);
+size_t ringbuffer_write(jack_ringbuffer_t *rb, float *src, size_t cnt);
+
+#endif

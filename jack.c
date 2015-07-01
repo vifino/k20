@@ -1,6 +1,24 @@
+/*
+    Copyright (C) 2008  Hans Fugal
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+*/
+
 #include "k20.h"
 
-float dbfs(float amplitude) 
+float dbfs(float amplitude)
 {
     return 20*log10(max(amplitude, 0));
 }
@@ -32,8 +50,8 @@ void rms(struct meter *m, float x0)
                      N
                 1 + SUM b(k+1) z^(-k)
                     k=1
-       so, 
-        
+       so,
+
         y(n) = sum(k=0..M; a(k+1) x(n-k)) - sum(k=1..N; b(k+1) y(n-k))
 
     */
@@ -41,7 +59,7 @@ void rms(struct meter *m, float x0)
     x0 = x0*x0;
 
     // calculate
-    m->y0 = m->a0 * x0 + m->a1 * m->x1 + m->a2 * m->x2 - 
+    m->y0 = m->a0 * x0 + m->a1 * m->x1 + m->a2 * m->x2 -
                         (m->b1 * m->y1 + m->b2 * m->y2);
     // avoid a sqrt by dividing log by 2.
     // adjust up for AES-17 (not sure why it's off by about 1.4 instead of 3)
@@ -75,7 +93,7 @@ int jack_process(jack_nframes_t nframes, void *arg)
     peak = dbfs(peak);
     if (!ctx->dump)
     {
-        // don't do peak decay in dump mode 
+        // don't do peak decay in dump mode
         m->peak -= s * 26/3;
         if (peak > m->peak)
             m->peak = peak;
@@ -108,21 +126,3 @@ int jack_process(jack_nframes_t nframes, void *arg)
     sem_post(ctx->sem);
     return 0;
 }
-
-/*
-    Copyright (C) 2008  Hans Fugal
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-*/

@@ -1,9 +1,10 @@
-LDFLAGS+=-lncurses -ljack -lm -lpthread
+LDFLAGS+=-lm -lpthread -lncurses -ljack
 PREFIX=/usr/local
-objects=ringbuffer.o k20.o jack.o options.o
+objects=ringbuffer.o jack.o options.o
 all: options.h k20
 
 k20: $(objects)
+	$(CC)    -o k20 k20.c $(objects) $(LDFLAGS)
 
 options.o: options.h options.c
 options.h: options.opts

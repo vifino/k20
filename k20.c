@@ -34,14 +34,14 @@ int scale(float dbfs);
 
 int main(int argc, char *const *argv)
 {
-    struct options opts = {0, "k20", 0, 30};
+    struct options opts = {"k20", 0, 30, 0, 0};
     parse_options(&argc, &argv, &opts);
 
     struct context ctx = {};
     ctx.dump = opts.d;
 
     // JACK initialization
-    ctx.jack = jack_client_open(opts.n, 0, 0);
+    ctx.jack = jack_client_open(opts.n, 0, 0, 0);
     if (!ctx.jack)
     {
         fprintf(stderr, "Failed to create JACK client.\n");
@@ -67,24 +67,11 @@ int main(int argc, char *const *argv)
     ctx.sem = sem_open(jack_get_client_name(ctx.jack), O_CREAT, 0600, 0);
     if (ctx.sem == SEM_FAILED)
     {
-        perror("Opening semaphore");
+        fprintf(stderr, "Failed to open semaphore.\n");
         exit(1);
     }
 
     jack_activate(ctx.jack);
-
-    WINDOW * mainwin;
-
-    if ( (mainwin = initscr()) == NULL ) {
-        fprintf(stderr, "Error initialising ncurses.\n");
-        exit(EXIT_FAILURE);
-    }
-    init_pair(1, COLOR_GREEN, -1); // Green.
-    init_pair(2, COLOR_YELLOW, -1); // Yellow
-    init_pair(3, COLOR_RED, -1); // Red
-    init_pair(4, COLOR_WHITE, -1); // Warning
-    if (has_colors())
-        start_color();
 
     int i;
     for (i=0; i<argc; i++)
@@ -96,7 +83,6 @@ int main(int argc, char *const *argv)
         int ret = jack_connect(ctx.jack, argv[i], p);
         if (ret != 0 && ret != EEXIST)
         {
-            endwin();
             fprintf(stderr, "Couldn't connect to port %s.\n", argv[i]);
             exit(EXIT_FAILURE);
         }
@@ -113,12 +99,27 @@ int main(int argc, char *const *argv)
         }
     } else {
         // meter
+
+        if ( initscr() == NULL ) {
+            fprintf(stderr, "Error initialising ncurses.\n");
+            exit(EXIT_FAILURE);
+        }
+        noecho();
+        cbreak();
+
+        init_pair(1, COLOR_GREEN, -1); // Green.
+        init_pair(2, COLOR_YELLOW, COLOR_YELLOW); // Yellow
+        init_pair(3, COLOR_RED, COLOR_RED); // Red
+        init_pair(4, COLOR_WHITE, COLOR_RED); // Warning
+        if (has_colors() && !opts.C)
+            start_color();
+        use_default_colors();
         mvaddstr(0, 0, "-70   60   50   40   30        20   15   10  6  3  0  3  6   10   15   20+");
         mvaddstr(1, 0, " |    |    |    |    |         |    |    |   |  |  |  |  |   |    |    |");
         move(3, 0);
         while (1)
         {
-            // reset?
+            attrset(COLOR_PAIR(0));
             fd_set readfds;
             FD_ZERO(&readfds);
             FD_SET(fileno(stdin), &readfds);
@@ -149,35 +150,36 @@ int main(int argc, char *const *argv)
             //mvprintw(2, 0, " \e[K\e[32m%.50s\e[33m%.5s\e[31m%.16s\e[0m", meter, meter+50, meter+55);
             move(2, 0);
             clrtoeol();
-            move(2, 0);
+            standend();
             attron(COLOR_PAIR(1)); // Green
             printw("%.50s", meter);
-            attroff(COLOR_PAIR(1));
-            attron(COLOR_PAIR(2)); // Yellow
-            printw("%.50s", meter+50);
-            attroff(COLOR_PAIR(2));
-            attron(COLOR_PAIR(3)); // Red
-            printw("%.50s", meter+55);
-            attroff(COLOR_PAIR(3));
+            //attroff(COLOR_PAIR(1));
+
+            //attrset(COLOR_PAIR(2)); // Yellow
+            printw("%.5s", meter+50);
+            //attroff(COLOR_PAIR(2));
+
+            //attrset(COLOR_PAIR(3)); // Red
+            printw("%.16s", meter+55);
+            //attroff(COLOR_PAIR(3));
+            standend();
 
             if (ctx.m.overs > 0) {
                 attron(COLOR_PAIR(4));
-                mvprintw(2, 0, "   %d ", ctx.m.overs);
+                mvprintw(3, 0, "   %d ", ctx.m.overs);
                 attroff(COLOR_PAIR(4));
             }
             if (opts.v) // verbose
-                mvprintw(2, 0, " %.1f %.1f %.1f", ctx.m.rms, ctx.m.peak, ctx.m.maxpeak);
+                mvprintw(2, 72, " %.1f %.1f %.1f", ctx.m.rms, ctx.m.peak, ctx.m.maxpeak);
             endwin();
             refresh();
         }
+        endwin();
+        refresh();
     }
 
     jack_deactivate(ctx.jack);
     jack_client_close(ctx.jack);
-
-    delwin(mainwin);
-    endwin();
-    refresh();
 
     return EXIT_SUCCESS;
 }

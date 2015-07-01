@@ -16,7 +16,7 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-#include <stdio.h>
+#include <ncurses.h>
 #include <errno.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -73,6 +73,19 @@ int main(int argc, char *const *argv)
 
     jack_activate(ctx.jack);
 
+    WINDOW * mainwin;
+
+    if ( (mainwin = initscr()) == NULL ) {
+        fprintf(stderr, "Error initialising ncurses.\n");
+        exit(EXIT_FAILURE);
+    }
+    init_pair(1, COLOR_GREEN, -1); // Green.
+    init_pair(2, COLOR_YELLOW, -1); // Yellow
+    init_pair(3, COLOR_RED, -1); // Red
+    init_pair(4, COLOR_WHITE, -1); // Warning
+    if (has_colors())
+        start_color();
+
     int i;
     for (i=0; i<argc; i++)
     {
@@ -83,7 +96,9 @@ int main(int argc, char *const *argv)
         int ret = jack_connect(ctx.jack, argv[i], p);
         if (ret != 0 && ret != EEXIST)
         {
+            endwin();
             fprintf(stderr, "Couldn't connect to port %s.\n", argv[i]);
+            exit(EXIT_FAILURE);
         }
     }
 
@@ -98,8 +113,9 @@ int main(int argc, char *const *argv)
         }
     } else {
         // meter
-        printf("-70   60   50   40   30        20   15   10  6  3  0  3  6   10   15   20+\n");
-        printf(" |    |    |    |    |         |    |    |   |  |  |  |  |   |    |    |\n");
+        mvaddstr(0, 0, "-70   60   50   40   30        20   15   10  6  3  0  3  6   10   15   20+");
+        mvaddstr(1, 0, " |    |    |    |    |         |    |    |   |  |  |  |  |   |    |    |");
+        move(3, 0);
         while (1)
         {
             // reset?
@@ -113,7 +129,7 @@ int main(int argc, char *const *argv)
                 fgets(buf, 1024, stdin);
                 ctx.m.overs = 0;
                 ctx.m.maxpeak = ctx.m.peak = dbfs(0);
-                printf("\e[A"); // up a line (counter the newline)
+                move(3, 0); // up a line (counter the newline)
             }
 
             char meter[72];
@@ -130,19 +146,40 @@ int main(int argc, char *const *argv)
             if (p >= 0)
                 meter[p] = '#';
 
-            printf(" \e[K\e[32m%.50s\e[33m%.5s\e[31m%.16s\e[0m", meter, meter+50, meter+55);
-            if (ctx.m.overs > 0)
-                printf("  \e[41;37m %d \e[0m", ctx.m.overs);
-            if (opts.v) // verbose
-                printf(" %.1f %.1f %.1f", ctx.m.rms, ctx.m.peak, ctx.m.maxpeak);
-            printf("\r");
+            //mvprintw(2, 0, " \e[K\e[32m%.50s\e[33m%.5s\e[31m%.16s\e[0m", meter, meter+50, meter+55);
+            move(2, 0);
+            clrtoeol();
+            move(2, 0);
+            attron(COLOR_PAIR(1)); // Green
+            printw("%.50s", meter);
+            attroff(COLOR_PAIR(1));
+            attron(COLOR_PAIR(2)); // Yellow
+            printw("%.50s", meter+50);
+            attroff(COLOR_PAIR(2));
+            attron(COLOR_PAIR(3)); // Red
+            printw("%.50s", meter+55);
+            attroff(COLOR_PAIR(3));
 
-            fflush(stdout);
+            if (ctx.m.overs > 0) {
+                attron(COLOR_PAIR(4));
+                mvprintw(2, 0, "   %d ", ctx.m.overs);
+                attroff(COLOR_PAIR(4));
+            }
+            if (opts.v) // verbose
+                mvprintw(2, 0, " %.1f %.1f %.1f", ctx.m.rms, ctx.m.peak, ctx.m.maxpeak);
+            endwin();
+            refresh();
         }
     }
 
     jack_deactivate(ctx.jack);
     jack_client_close(ctx.jack);
+
+    delwin(mainwin);
+    endwin();
+    refresh();
+
+    return EXIT_SUCCESS;
 }
 
 int scale(float dbfs)

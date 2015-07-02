@@ -131,8 +131,10 @@ int main(int argc, char *const *argv)
                 meter[p] = '#';
 
             printf(" \e[K\e[32m%.50s\e[33m%.5s\e[31m%.16s\e[0m", meter, meter+50, meter+55);
-            if (ctx.m.overs > 0)
+            if (ctx.m.overs > 0) {
                 printf("  \e[41;37m %d \e[0m", ctx.m.overs);
+                ctx.m.overs = 0;
+            }
             if (opts.v) // verbose
                 printf(" %.1f %.1f %.1f", ctx.m.rms, ctx.m.peak, ctx.m.maxpeak);
             printf("\r");

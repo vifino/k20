@@ -171,6 +171,7 @@ int main(int argc, char *const *argv)
                 attron(COLOR_PAIR(4));
                 mvprintw(2, 72, "   %d ", ctx.m.overs);
                 attroff(COLOR_PAIR(4));
+                ctx.m.overs = 0;
             }
             if (opts.v) // verbose
                 mvprintw(2, 72, " %.1f %.1f %.1f", ctx.m.rms, ctx.m.peak, ctx.m.maxpeak);

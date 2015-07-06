@@ -3,3 +3,5 @@ k20
 options.c
 options.h
 
+*.un~
+*.swp

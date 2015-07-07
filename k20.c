@@ -106,21 +106,18 @@ int main(int argc, char *const *argv)
         }
         noecho();
 
-        init_pair(1, COLOR_GREEN, COLOR_GREEN); // Green.
-        init_pair(2, COLOR_YELLOW, COLOR_YELLOW); // Yellow
-        init_pair(3, COLOR_RED, COLOR_RED); // Red
-        init_pair(4, COLOR_WHITE, COLOR_RED); // Warning
-        init_pair(5, COLOR_WHITE, -1);
-
         if (has_colors() && !opts.C)
             start_color();
         use_default_colors();
 
-        attron(A_BOLD);
+        standend();
+        //attron(A_BOLD);
         mvaddstr(0, 0, "-70   60   50   40   30        20   15   10  6  3  0  3  6   10   15   20+");
         mvaddstr(1, 0, " |    |    |    |    |         |    |    |   |  |  |  |  |   |    |    |");
-        attroff(A_BOLD);
-        standend();
+        //attroff(A_BOLD);
+        if (!opts.B) 
+          attron(A_BOLD);
+        curs_set(false);
         move(3, 0);
         while (1)
         {
@@ -151,31 +148,37 @@ int main(int argc, char *const *argv)
             if (p >= 0)
                 meter[p] = '#';
 
+            init_pair(1, COLOR_GREEN, -1); // Green.
+            init_pair(2, COLOR_YELLOW, -1); // Yellow
+            init_pair(3, COLOR_RED, -1); // Red
+            init_pair(4, COLOR_WHITE, COLOR_RED); // Warning
+            init_pair(5, COLOR_WHITE, -1);
+
             //mvprintw(2, 0, " \e[K\e[32m%.50s\e[33m%.5s\e[31m%.16s\e[0m", meter, meter+50, meter+55);
             move(2, 0);
-            //clrtoeol();
-            attron(COLOR_PAIR(5)); // Green
+            clrtoeol();
+            attron(COLOR_PAIR(1)); // Green
             printw("%.50s", meter);
-            //attroff(COLOR_PAIR(1));
+            attroff(COLOR_PAIR(1));
 
-            //attrset(COLOR_PAIR(2)); // Yellow
+            attron(COLOR_PAIR(2)); // Yellow
             printw("%.5s", meter+50);
-            //attroff(COLOR_PAIR(2));
+            attroff(COLOR_PAIR(2));
 
-            //attrset(COLOR_PAIR(3)); // Red
+            attron(COLOR_PAIR(3)); // Red
             printw("%.16s", meter+55);
-            //attroff(COLOR_PAIR(3));
-            standend();
+            attroff(COLOR_PAIR(3));
 
             if (ctx.m.overs > 0) {
+                printw("   ");
                 attron(COLOR_PAIR(4));
-                mvprintw(2, 72, "   %d ", ctx.m.overs);
+                printw(" %d ", ctx.m.overs);
                 attroff(COLOR_PAIR(4));
                 ctx.m.overs = 0;
             }
             if (opts.v) // verbose
-                mvprintw(2, 72, " %.1f %.1f %.1f", ctx.m.rms, ctx.m.peak, ctx.m.maxpeak);
-            //endwin();
+                printw(" %.1f %.1f %.1f", ctx.m.rms, ctx.m.peak, ctx.m.maxpeak);
+            endwin();
             refresh();
         }
         endwin();

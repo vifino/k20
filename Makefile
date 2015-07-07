@@ -4,7 +4,7 @@ objects=ringbuffer.o jack.o options.o
 all: options.h k20
 
 k20: $(objects)
-	$(CC)    -o k20 k20.c $(objects) $(LDFLAGS)
+	$(CC) $(CFLAGS$) $(CPPFLAGS)  -o k20 k20.c $(objects) $(LDFLAGS)
 
 options.o: options.h options.c
 options.h: options.opts

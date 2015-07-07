@@ -155,7 +155,6 @@ int main(int argc, char *const *argv)
             printmeter(opts.v, ctx.m.rms, ctx.m.peak, ctx.m.maxpeak, ctx.m.overs);
             ctx.m.overs = 0;
 
-            endwin();
             refresh();
         }
         refresh();

@@ -101,63 +101,108 @@ int main(int argc, char *const *argv)
         }
     } else {
         // meter
-
-        if ( initscr() == NULL ) {
-            fprintf(stderr, "Error initialising ncurses.\n");
-            exit(EXIT_FAILURE);
-        }
-        noecho();
-
-        if (has_colors() && !opts.C)
-            start_color();
-        use_default_colors();
-
-        standend();
-        //attron(A_BOLD);
-        mvaddstr(0, 0, "-70   60   50   40   30        20   15   10  6  3  0  3  6   10   15   20+");
-        mvaddstr(1, 0, " |    |    |    |    |         |    |    |   |  |  |  |  |   |    |    |");
-        //attroff(A_BOLD);
-        if (!opts.B) 
-          attron(A_BOLD);
-        curs_set(false);
-        move(3, 0);
-        while (1)
-        {
-            fd_set readfds;
-            FD_ZERO(&readfds);
-            FD_SET(fileno(stdin), &readfds);
-            //struct timeval tv = {0, 1000000 * 1.0/opts.r};
-            struct timeval tv = {0, 1000000 * 1.0/30};
-            if (select(fileno(stdin)+1, &readfds, 0, 0, &tv))
+        if (opts.e) { // ansi-only
+            printf("-70   60   50   40   30        20   15   10  6  3  0  3  6   10   15   20+\n");
+            printf(" |    |    |    |    |         |    |    |   |  |  |  |  |   |    |    |\n");
+            while (1)
             {
-                char buf[1024];
-                fgets(buf, 1024, stdin);
-                ctx.m.overs = 0;
-                ctx.m.maxpeak = ctx.m.peak = dbfs(0);
-                move(3, 0); // up a line (counter the newline)
+                // reset?
+                fd_set readfds;
+                FD_ZERO(&readfds);
+                FD_SET(fileno(stdin), &readfds);
+                struct timeval tv = {0, 1000000 * 1.0/opts.r};
+                if (select(fileno(stdin)+1, &readfds, 0, 0, &tv))
+                {
+                    char buf[1024];
+                    fgets(buf, 1024, stdin);
+                    ctx.m.overs = 0;
+                    ctx.m.maxpeak = ctx.m.peak = dbfs(0);
+                    printf("\e[A"); // up a line (counter the newline)
+                }
+
+                char meter[72];
+
+                memset(meter, ' ', 71);
+                meter[71] = 0;
+                int p = scale(ctx.m.rms);
+                if (p >= 0)
+                    memset(meter, '#', p);
+                p = scale(ctx.m.peak)-1;
+                if (p >= 0)
+                    meter[p] = '#';
+                p = scale(ctx.m.maxpeak)-1;
+                if (p >= 0)
+                    meter[p] = '#';
+
+                printf(" \e[K\e[32m%.50s\e[33m%.5s\e[31m%.16s\e[0m", meter, meter+50, meter+55);
+                if (ctx.m.overs > 0) {
+                    printf("  \e[41;37m %d \e[0m", ctx.m.overs);
+                    ctx.m.overs = 0;
+                }
+                if (opts.v) // verbose
+                    printf(" %.1f %.1f %.1f", ctx.m.rms, ctx.m.peak, ctx.m.maxpeak);
+                printf("\r");
+
+                fflush(stdout);
             }
+        } else {
+            if ( initscr() == NULL ) {
+                fprintf(stderr, "Error initialising ncurses.\n");
+                exit(EXIT_FAILURE);
+            }
+            noecho();
 
-            init_pair(1, COLOR_GREEN, -1); // Green.
-            init_pair(2, COLOR_YELLOW, -1); // Yellow
-            init_pair(3, COLOR_RED, -1); // Red
-            init_pair(4, COLOR_WHITE, COLOR_RED); // Warning
-            init_pair(5, COLOR_WHITE, -1);
+            if (has_colors() && !opts.C)
+                start_color();
+            use_default_colors();
 
-            
-            /*init_pair(1, COLOR_GREEN, COLOR_GREEN); // Green.
-            init_pair(2, COLOR_YELLOW, COLOR_YELLOW); // Yellow
-            init_pair(3, COLOR_RED, COLOR_RED); // Red
-            init_pair(4, COLOR_WHITE, COLOR_RED); // Warning
-            init_pair(5, COLOR_WHITE, -1);*/
+            standend();
+            //attron(A_BOLD);
+            mvaddstr(0, 0, "-70   60   50   40   30        20   15   10  6  3  0  3  6   10   15   20+");
+            mvaddstr(1, 0, " |    |    |    |    |         |    |    |   |  |  |  |  |   |    |    |");
+            //attroff(A_BOLD);
+            if (!opts.B)
+              attron(A_BOLD);
+            curs_set(false);
+            move(3, 0);
+            while (1)
+            {
+                fd_set readfds;
+                FD_ZERO(&readfds);
+                FD_SET(fileno(stdin), &readfds);
+                //struct timeval tv = {0, 1000000 * 1.0/opts.r};
+                struct timeval tv = {0, 1000000 * 1.0/30};
+                if (select(fileno(stdin)+1, &readfds, 0, 0, &tv))
+                {
+                    char buf[1024];
+                    fgets(buf, 1024, stdin);
+                    ctx.m.overs = 0;
+                    ctx.m.maxpeak = ctx.m.peak = dbfs(0);
+                    move(3, 0); // up a line (counter the newline)
+                }
 
-            //mvprintw(2, 0, " \e[K\e[32m%.50s\e[33m%.5s\e[31m%.16s\e[0m", meter, meter+50, meter+55);
-            move(2, 0);
-            printmeter(opts.v, ctx.m.rms, ctx.m.peak, ctx.m.maxpeak, ctx.m.overs);
-            ctx.m.overs = 0;
+                init_pair(1, COLOR_GREEN, -1); // Green.
+                init_pair(2, COLOR_YELLOW, -1); // Yellow
+                init_pair(3, COLOR_RED, -1); // Red
+                init_pair(4, COLOR_WHITE, COLOR_RED); // Warning
+                init_pair(5, COLOR_WHITE, -1);
 
+
+                /*init_pair(1, COLOR_GREEN, COLOR_GREEN); // Green.
+                init_pair(2, COLOR_YELLOW, COLOR_YELLOW); // Yellow
+                init_pair(3, COLOR_RED, COLOR_RED); // Red
+                init_pair(4, COLOR_WHITE, COLOR_RED); // Warning
+                init_pair(5, COLOR_WHITE, -1);*/
+
+                //mvprintw(2, 0, " \e[K\e[32m%.50s\e[33m%.5s\e[31m%.16s\e[0m", meter, meter+50, meter+55);
+                move(2, 0);
+                printmeter(opts.v, ctx.m.rms, ctx.m.peak, ctx.m.maxpeak, ctx.m.overs);
+                ctx.m.overs = 0;
+
+                refresh();
+            }
             refresh();
         }
-        refresh();
     }
 
     jack_deactivate(ctx.jack);
@@ -209,7 +254,7 @@ void printmeter(bool verbose, float rms, float peak, float maxpeak, int overs)
 
   clrtoeol();
   writemeter(meter);
-	
+
   if (overs > 0)
   {
     printw("   ");

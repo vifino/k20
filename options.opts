@@ -5,3 +5,4 @@ usage: k20 [options] [port]
 -v --verbose bool Enable verbose output (wide terminal needed)
 -C --nocolor bool Disable color output.
 -B --nobold bool Don't bold the meter.
+-e --ansionly bool Use escapes only instead of ncurses.

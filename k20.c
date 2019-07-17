@@ -31,7 +31,6 @@
 #include "k20.h"
 
 int scale(float dbfs);
-void witeemeter(char* meter);
 void printmeter(bool verbose, float rms, float peak, float maxpeak, int overs);
 
 int main(int argc, char *const *argv)
@@ -79,15 +78,17 @@ int main(int argc, char *const *argv)
     for (i=0; i<argc; i++)
     {
         char *n = jack_get_client_name(ctx.jack);
-        char *p = alloca(strlen(n) + 3 + 1);
-        strncpy(p, n, strlen(n));
-        strncpy(p+strlen(n), ":in", 3);
+	size_t len = strlen(n);
+        char *p = malloc(len + 3 + 1);
+        strncpy(p, n, len);
+        strncpy(p+strlen(n), ":in", 4);
         int ret = jack_connect(ctx.jack, argv[i], p);
         if (ret != 0 && ret != EEXIST)
         {
             fprintf(stderr, "Couldn't connect to port %s.\n", argv[i]);
             exit(EXIT_FAILURE);
         }
+	free(p);
     }
 
     if (ctx.dump)
@@ -101,7 +102,8 @@ int main(int argc, char *const *argv)
         }
     } else {
         // meter
-        if (opts.e) { // ansi-only
+        if (opts.e) // ansi-only
+        {
             printf("-70   60   50   40   30        20   15   10  6  3  0  3  6   10   15   20+\n");
             printf(" |    |    |    |    |         |    |    |   |  |  |  |  |   |    |    |\n");
             while (1)
@@ -146,7 +148,8 @@ int main(int argc, char *const *argv)
                 fflush(stdout);
             }
         } else {
-            if ( initscr() == NULL ) {
+            if (initscr() == NULL)
+            {
                 fprintf(stderr, "Error initialising ncurses.\n");
                 exit(EXIT_FAILURE);
             }
@@ -157,12 +160,10 @@ int main(int argc, char *const *argv)
             use_default_colors();
 
             standend();
-            //attron(A_BOLD);
             mvaddstr(0, 0, "-70   60   50   40   30        20   15   10  6  3  0  3  6   10   15   20+");
             mvaddstr(1, 0, " |    |    |    |    |         |    |    |   |  |  |  |  |   |    |    |");
-            //attroff(A_BOLD);
             if (!opts.B)
-              attron(A_BOLD);
+                attron(A_BOLD);
             curs_set(false);
             move(3, 0);
             while (1)
@@ -170,8 +171,7 @@ int main(int argc, char *const *argv)
                 fd_set readfds;
                 FD_ZERO(&readfds);
                 FD_SET(fileno(stdin), &readfds);
-                //struct timeval tv = {0, 1000000 * 1.0/opts.r};
-                struct timeval tv = {0, 1000000 * 1.0/30};
+                struct timeval tv = {0, 1000000 * 1.0/opts.r};
                 if (select(fileno(stdin)+1, &readfds, 0, 0, &tv))
                 {
                     char buf[1024];
@@ -187,12 +187,6 @@ int main(int argc, char *const *argv)
                 init_pair(4, COLOR_WHITE, COLOR_RED); // Warning
                 init_pair(5, COLOR_WHITE, -1);
 
-
-                /*init_pair(1, COLOR_GREEN, COLOR_GREEN); // Green.
-                init_pair(2, COLOR_YELLOW, COLOR_YELLOW); // Yellow
-                init_pair(3, COLOR_RED, COLOR_RED); // Red
-                init_pair(4, COLOR_WHITE, COLOR_RED); // Warning
-                init_pair(5, COLOR_WHITE, -1);*/
 
                 //mvprintw(2, 0, " \e[K\e[32m%.50s\e[33m%.5s\e[31m%.16s\e[0m", meter, meter+50, meter+55);
                 move(2, 0);
@@ -222,47 +216,44 @@ int scale(float dbfs)
     return max(0, min(x, 71));
 }
 
-void writemeter(char* meter)
-{
-  attron(COLOR_PAIR(1)); // Green
-  printw("%.50s", meter);
-  attroff(COLOR_PAIR(1));
-
-  attron(COLOR_PAIR(2)); // Yellow
-  printw("%.5s", meter+50);
-  attroff(COLOR_PAIR(2));
-
-  attron(COLOR_PAIR(3)); // Red
-  printw("%.16s", meter+55);
-  attroff(COLOR_PAIR(3));
-}
-
 void printmeter(bool verbose, float rms, float peak, float maxpeak, int overs)
 {
-  char meter[72];
-  memset(meter, ' ', 71);
-  meter[71] = 0;
-  int p = scale(rms);
-  if (p >= 0)
-    memset(meter, '#', p);
+    char meter[72];
+    memset(meter, ' ', 71);
+    meter[71] = 0;
+    int p = scale(rms);
+    if (p >= 0)
+        memset(meter, '#', p);
+
     p = scale(peak)-1;
-  if (p >= 0)
-    meter[p] = '#';
+    if (p >= 0)
+        meter[p] = '#';
+
     p = scale(maxpeak)-1;
-  if (p >= 0)
-    meter[p] = '#';
+    if (p >= 0)
+        meter[p] = '#';
 
-  clrtoeol();
-  writemeter(meter);
+    clrtoeol();
+    attron(COLOR_PAIR(1)); // Green
+    printw("%.50s", meter);
+    attroff(COLOR_PAIR(1));
 
-  if (overs > 0)
-  {
-    printw("   ");
-    attron(COLOR_PAIR(4));
-    printw(" %d ", overs);
-    attroff(COLOR_PAIR(4));
-    //overs = 0;
-  }
-  if (verbose) // verbose
-    printw(" %.1f %.1f %.1f", rms, peak, maxpeak);
+    attron(COLOR_PAIR(2)); // Yellow
+    printw("%.5s", meter+50);
+    attroff(COLOR_PAIR(2));
+
+    attron(COLOR_PAIR(3)); // Red
+    printw("%.16s", meter+55);
+    attroff(COLOR_PAIR(3));
+
+    if (overs > 0)
+    {
+        printw("   ");
+        attron(COLOR_PAIR(4));
+        printw(" %d ", overs);
+        attroff(COLOR_PAIR(4));
+        //overs = 0;
+    }
+    if (verbose) // verbose
+        printw(" %.1f %.1f %.1f", rms, peak, maxpeak);
 }

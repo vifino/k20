@@ -84,6 +84,7 @@ source_template = <<-EOF
 #include <string.h>
 #include <inttypes.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 void usage(void)
 {
